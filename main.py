@@ -47,7 +47,7 @@ def get_status(service: dict):
 
 def get_services_to_monitor():
     """
-    This function calls the notion API to get the services that we need to monitor
+    This function calls the Notion API to get the services that you need to monitor
     and returns a list of the services.
     """
 
@@ -115,7 +115,7 @@ def update_service_status(service: dict, status: str):
 
 def send_notification(service: dict, status: str):
     """
-    This function sends a whatsapp notification using the twilio whatsapp API
+    This function sends a WhatsApp notification using the Twilio WhatsApp API.
     """
 
     if service['last_recorded_status'] != status:
