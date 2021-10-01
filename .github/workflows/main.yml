@@ -16,7 +16,7 @@ jobs:
       - name: Setup Repository
         uses: actions/checkout@v2
         with:
-          ref: master
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -29,5 +29,5 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Monitoring
-        run: |
-          python src/main.py
+        run: |-
+          python main.py

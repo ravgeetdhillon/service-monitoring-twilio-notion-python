@@ -21,30 +21,6 @@ TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 
 
-def get_status(service: dict):
-    """
-    This function returns a status string based on the status code
-    and presence of the identifier in the response.
-    """
-
-    response: Response = requests.get(service['url'])
-
-    if response is not None:
-        status_code: int = response.status_code
-        response_body: str = response.text
-
-        if status_code >= 200 and status_code < 400 and service['identifier'].lower() in response_body.lower():
-            return 'Operational'
-        elif status_code >= 200 and status_code < 400:
-            return 'Doubtful'
-        elif status_code >= 400 and status_code < 500:
-            return 'Warning'
-        elif status_code == 503:
-            return 'Maintenance'
-        else:
-            return 'Down'
-
-
 def get_services_to_monitor():
     """
     This function calls the Notion API to get the services that you need to monitor
@@ -85,6 +61,30 @@ def get_services_to_monitor():
         services.append(service)
 
     return services
+
+
+def get_status(service: dict):
+    """
+    This function returns a status string based on the status code
+    and presence of the identifier in the response.
+    """
+
+    response: Response = requests.get(service['url'])
+
+    if response is not None:
+        status_code: int = response.status_code
+        response_body: str = response.text
+
+        if status_code >= 200 and status_code < 400 and service['identifier'].lower() in response_body.lower():
+            return 'Operational'
+        elif status_code >= 200 and status_code < 400:
+            return 'Doubtful'
+        elif status_code >= 400 and status_code < 500:
+            return 'Warning'
+        elif status_code == 503:
+            return 'Maintenance'
+        else:
+            return 'Down'
 
 
 def update_service_status(service: dict, status: str):
