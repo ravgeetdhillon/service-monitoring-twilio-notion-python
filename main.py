@@ -2,7 +2,6 @@
 Automated Monitoring of Web Services using Twilio, Notion, and Python.
 by https://github.com/ravgeetdhillon
 """
-
 import json
 import os
 
@@ -10,27 +9,27 @@ import requests
 from dotenv import load_dotenv
 from requests.models import Response
 from twilio.rest import Client
-from twilio.rest.api.v2010.account.message import MessageInstance
+
 
 load_dotenv()
 
+TWILIO_ACCOUNT_SID = os.getenv('ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('AUTH_TOKEN')
 NOTION_API_BASE_URL = 'https://api.notion.com/v1'
 NOTION_API_TOKEN = os.getenv('NOTION_API_TOKEN')
 NOTION_DATABASE_ID = os.getenv('NOTION_DATABASE_ID')
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 
 
 def get_services_to_monitor():
     """
-    This function calls the Notion API to get the services that you need to monitor
+    Calls the notion API to get the services that we need to monitor
     and returns a list of the services.
     """
 
     headers: dict = {
         'Authorization': f'Bearer {NOTION_API_TOKEN}',
         'Content-Type': 'application/json',
-        'Notion-Version': '2021-05-13',
+        'Notion-Version': '2021-08-16',
     }
 
     # uses https://developers.notion.com/reference/post-database-query
@@ -40,6 +39,7 @@ def get_services_to_monitor():
     if response.status_code == 200:
         json_response: dict = response.json()['results']
     else:
+        print("Something went wrong.")
         return
 
     services: list = []
@@ -51,22 +51,22 @@ def get_services_to_monitor():
             'identifier': item['properties']['Identifier']['rich_text'][0]['text']['content'],
         }
 
-        # since status of a service can be empty
-        # we need to use try except block to get the last recorded status of a service
+        # Add this block
+		# Since status of a service can be empty, we need to use try except block
+        # to get the last recorded status of a service
         try:
             service['last_recorded_status'] = item['properties']['Status']['select']['name']
         except KeyError:
             service['last_recorded_status'] = ''
 
         services.append(service)
-
+    print(services)
     return services
-
 
 def get_status(service: dict):
     """
     This function returns a status string based on the status code
-    and presence of the identifier in the response.
+    and the presence of the identifier in the response.
     """
 
     response: Response = requests.get(service['url'])
@@ -86,10 +86,13 @@ def get_status(service: dict):
         else:
             return 'Down'
 
+    else:
+        print("Something went wrong.")
+        return
 
 def update_service_status(service: dict, status: str):
     """
-    This function updates the service's status using Notion API.
+    This function updates the service's status using the Notion API.
     """
 
     payload: dict = {
@@ -105,24 +108,28 @@ def update_service_status(service: dict, status: str):
     headers: dict = {
         'Authorization': f'Bearer {NOTION_API_TOKEN}',
         'Content-Type': 'application/json',
-        'Notion-Version': '2021-05-13',
+        'Notion-Version': '2021-08-16',
     }
 
     # uses https://developers.notion.com/reference/patch-page
     requests.patch(
-        f'{NOTION_API_BASE_URL}/pages/{service["id"]}', headers=headers, data=json.dumps(payload))
-
+        f'{NOTION_API_BASE_URL}/pages/{service["id"]}',
+        headers=headers,
+        data=json.dumps(payload),
+    )
 
 def send_notification(service: dict, status: str):
     """
-    This function sends a WhatsApp notification using the Twilio WhatsApp API.
+    This function sends a WhatsApp notification using the Twilio WhatsApp Business API.
     """
 
-    if service['last_recorded_status'] != status:
+    if service['last_recorded_status'] != status:  # Add this line
+
+        # Indent all remaining lines
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-        from_whatsapp_number = 'whatsapp:+14155238886'
-        to_whatsapp_number = 'whatsapp:+919780221904'
+        from_whatsapp_number = 'whatsapp:+14155238886',  # This is the Twilio Sandbox number. Don't change it.
+        to_whatsapp_number = 'whatsapp:+<YOUR_WHATSAPP_NUMBER>'  # Customize this
         body: str = f'Status for {service["url"]} is {status}.'
 
         message: MessageInstance = client.messages.create(body=body,
@@ -131,18 +138,14 @@ def send_notification(service: dict, status: str):
 
         return message.sid
 
-
 def main():
-    """
-    Main function for the app.
-    """
-
     services: list = get_services_to_monitor()
     for service in services:
         status: str = get_status(service)
         update_service_status(service, status)
+        print("{} status is {} and has been updated in Notion.".format(service['url'], status))
         send_notification(service, status)
-
 
 if __name__ == '__main__':
     main()
+    
